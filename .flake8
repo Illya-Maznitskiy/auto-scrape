@@ -1,0 +1,7 @@
+[flake8]
+exclude =
+    venv,
+    .venv,
+    .git,
+    __pycache__,
+    auto_ria_scraper/auto_ria_scraper/settings.py
