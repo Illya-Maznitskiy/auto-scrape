@@ -6,6 +6,9 @@ from selenium.common.exceptions import TimeoutException
 from logs.logger import logger
 
 
+popup_handled = False
+
+
 def extract_price(response):
     """
     Extract USD price from the response.
@@ -59,7 +62,7 @@ def extract_odometer(response):
     return None
 
 
-def handle_consent_popup(driver, wait_time=10):
+def handle_consent_popup(driver, wait_time=1):
     """
     Attempts to close or reject cookie/consent popups using multiple strategies.
     """
@@ -118,22 +121,25 @@ def extract_phone(driver, url, wait_time=15):
     Extract phone number using Selenium, waiting until the phone number is revealed.
     Takes a screenshot if phone number is missing for debugging.
     """
-    logger.info(f"Extracting phone number from {url}")
+    global popup_handled
 
+    logger.info(f"Extracting phone number from {url}")
     try:
         driver.get(url)
         wait = WebDriverWait(driver, wait_time)
 
-        # Handle consent popup if present
-        handle_consent_popup(driver, wait_time)
+        # Only handle popup on the first run
+        if not popup_handled:
+            popup_handled = handle_consent_popup(driver, wait_time)
+            logger.info("Handled consent popup for the first time")
 
+        # Reveal phone number
         phone_button = wait.until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, "a.phone_show_link"))
         )
         phone_button.click()
         logger.debug("Clicked phone reveal button")
 
-        # Wait until phone number data-value attribute or text is not empty
         wait.until(
             lambda d: d.find_element(
                 By.CSS_SELECTOR, "div.popup-successful-call-desk"
@@ -148,27 +154,22 @@ def extract_phone(driver, url, wait_time=15):
         phone_div = driver.find_element(
             By.CSS_SELECTOR, "div.popup-successful-call-desk"
         )
-        phone_number = phone_div.get_attribute("data-value")
-
-        if not phone_number:
-            phone_number = phone_div.text.strip()
+        phone_number = (
+            phone_div.get_attribute("data-value") or phone_div.text.strip()
+        )
 
         if phone_number:
             logger.info(f"Extracted phone number: {phone_number}")
             return phone_number
 
-        # Save screenshot for debugging if no phone number found
-        screenshot_path = "phone_popup_missing.png"
-        driver.save_screenshot(screenshot_path)
-        logger.warning(
-            f"Phone number div found but no data-value or text. Screenshot saved to {screenshot_path}"
-        )
+        driver.save_screenshot("phone_popup_missing.png")
+        logger.warning("Phone number not found. Screenshot saved.")
         return None
 
     except TimeoutException as e:
-        logger.error(f"Timeout while waiting for phone number div: {e}")
+        logger.error(f"Timeout extracting phone number: {e}")
         return None
 
     except Exception as e:
-        logger.exception(f"Unexpected error extracting phone number: {e}")
+        logger.exception(f"Unexpected error: {e}")
         return None
