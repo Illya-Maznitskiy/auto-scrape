@@ -24,8 +24,8 @@ console_format = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 console_handler.setFormatter(console_format)
 
 # File handler for logging info and higher-level messages to file
-file_handler = logging.FileHandler(log_filename)
-file_handler.setLevel(logging.INFO)
+file_handler = logging.FileHandler(log_filename, encoding="utf-8")
+file_handler.setLevel(logging.DEBUG)
 file_format = logging.Formatter(
     "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
 )
