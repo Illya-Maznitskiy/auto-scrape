@@ -31,23 +31,57 @@ class AutoriaSpider(scrapy.Spider):
             yield response.follow(next_page, callback=self.parse)
 
     def parse_car(self, response):
-        logger.info(f"Parsing car page: {response.url}")
-        images = response.css("div.gallery img::attr(src)").getall()
+        logger.info(f"[parse_car] Parsing car page: {response.url}")
+
+        main_image_url = response.css(
+            'meta[property="og:image"]::attr(content)'
+        ).get()
+
+        # Extract images count text from the 'show-all' link
+        photos_text = response.css(
+            "div.action_disp_all_block a.show-all::text"
+        ).get(default="")
+
+        # Extract number from the text (e.g. "Смотреть все 62 фотографий")
+        import re
+
+        match = re.search(r"\d+", photos_text)
+        images_count = int(match.group()) if match else 0
+
+        username_raw = (
+            response.css("div.seller_info_name::text").get(default="").strip()
+        )
+
+        logger.debug(f"[parse_car] Found {images_count} image(s)")
+        logger.debug(f"[parse_car] Extracted username: '{username_raw}'")
+
+        car_number = response.xpath(
+            "//span[contains(@class,'state-num')]/text()"
+        ).get()
+        car_vin = response.xpath(
+            "//span[contains(@class, 'label-vin')]/text()"
+        ).get()
+
+        if not username_raw:
+            logger.warning(
+                f"[parse_car] Username not found on page: {response.url}"
+            )
+        if not car_vin:
+            logger.warning(
+                f"[parse_car] VIN not found on page: {response.url}"
+            )
+
         yield {
             "url": response.url,
             "title": response.css("h1.head::text").get(),
             "price_usd": extract_price(response),
             "odometer": extract_odometer(response),
-            "username": response.css("div.seller_info_name span::text").get(),
+            "username": username_raw,
             "phone_number": extract_phone(self.driver, response.url),
-            "image_url": images[0] if images else None,
-            "images_count": len(images),
-            "car_number": response.xpath(
-                "//span[contains(@class,'state-num')]/text()"
-            ).get(),
-            "car_vin": response.xpath(
-                "//span[contains(@class, 'label-vin')]/text()"
-            ).get(),
+            "image_url": main_image_url,
+            "images_count": images_count,
+            "car_number": car_number,
+            "car_vin": car_vin,
             "datetime_found": (
                 response.headers.get("Date").decode("utf-8")
                 if response.headers.get("Date")
