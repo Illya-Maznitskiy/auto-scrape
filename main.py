@@ -1,3 +1,6 @@
+import io
+import json
+
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
 
@@ -25,6 +28,14 @@ def main():
     process.start()
 
     logger.info("Crawling completed.")
+
+    with open("output.json", "r", encoding="utf-8") as infile:
+        data = json.load(infile)
+
+    with open("output_result.json", "w", encoding="utf-8") as outfile:
+        json.dump(data, outfile, ensure_ascii=False, indent=2)
+
+    logger.info("Final JSON saved with Cyrillic preserved.")
 
 
 if __name__ == "__main__":
