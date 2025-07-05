@@ -28,8 +28,9 @@ async def save_json_to_db(json_file, db: Database):
 
             await conn.execute(
                 """
-                INSERT INTO cars (url, title, price_usd, odometer, username, phone_number, image_url,
-                                  images_count, car_number, car_vin, datetime_found)
+                INSERT INTO cars (url, title, price_usd, odometer, username,
+                                  phone_number, image_url, images_count,
+                                  car_number, car_vin, datetime_found)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                 ON CONFLICT (car_vin) DO UPDATE SET
                     price_usd = EXCLUDED.price_usd,
