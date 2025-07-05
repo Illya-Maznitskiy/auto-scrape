@@ -10,6 +10,7 @@ from auto_ria_scraper.auto_ria_scraper.helpers.extractors import (
     extract_price,
     extract_odometer,
     extract_phone,
+    clean_phone,
 )
 
 
@@ -54,12 +55,16 @@ class AutoriaSpider(scrapy.Spider):
             or response.css("h4.seller_info_name a::text").get()
             or ""
         ).strip()
-        car_number = response.xpath(
-            "//span[contains(@class,'state-num')]/text()"
-        ).get()
-        car_vin = response.xpath(
-            "//span[contains(@class, 'label-vin')]/text()"
-        ).get()
+        car_number = (
+            response.xpath("//span[contains(@class,'state-num')]/text()")
+            .get()
+            .strip()
+        )
+        car_vin = (
+            response.xpath("//span[contains(@class, 'label-vin')]/text()")
+            .get()
+            .strip()
+        )
 
         yield {
             "url": response.url,
@@ -67,7 +72,9 @@ class AutoriaSpider(scrapy.Spider):
             "price_usd": extract_price(response),
             "odometer": extract_odometer(response),
             "username": username_raw,
-            "phone_number": extract_phone(self.driver, response.url),
+            "phone_number": clean_phone(
+                extract_phone(self.driver, response.url)
+            ),
             "image_url": main_image_url,
             "images_count": images_count,
             "car_number": car_number,
