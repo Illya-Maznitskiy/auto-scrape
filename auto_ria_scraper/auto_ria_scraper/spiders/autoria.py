@@ -1,5 +1,4 @@
 import re
-
 import scrapy
 
 from logs.logger import logger
@@ -39,7 +38,7 @@ class AutoriaSpider(scrapy.Spider):
 
         main_image_url = response.css(
             'meta[property="og:image"]::attr(content)'
-        ).get()
+        ).get(default="")
 
         photos_text = response.css(
             "div.action_disp_all_block a.show-all::text"
@@ -57,16 +56,15 @@ class AutoriaSpider(scrapy.Spider):
         ).strip()
         car_number = (
             response.xpath("//span[contains(@class,'state-num')]/text()")
-            .get()
+            .get(default="")
             .strip()
         )
         car_vin = (
             response.xpath("//span[contains(@class, 'label-vin')]/text()")
-            .get()
+            .get(default="")
             .strip()
         )
-
-        yield {
+        car_data = {
             "url": response.url,
             "title": response.css("h1.head::text").get(),
             "price_usd": extract_price(response),
@@ -85,3 +83,5 @@ class AutoriaSpider(scrapy.Spider):
                 else None
             ),
         }
+
+        yield car_data
