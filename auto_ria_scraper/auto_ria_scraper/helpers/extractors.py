@@ -173,3 +173,10 @@ def extract_phone(driver, url, wait_time=15):
     except Exception as e:
         logger.exception(f"Unexpected error: {e}")
         return None
+
+
+def clean_phone(phone_raw):
+    digits = re.sub(r"\D", "", phone_raw)  # remove non-digits
+    if digits.startswith("0"):
+        digits = "380" + digits[1:]  # add country code
+    return digits
