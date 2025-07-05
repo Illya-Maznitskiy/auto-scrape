@@ -123,7 +123,7 @@ def extract_phone(driver, url, wait_time=15):
     """
     Extract phone number using Selenium, waiting until
     the phone number is revealed.
-    Takes a screenshot if phone number is missing for debugging.
+    Tries multiple button selectors to handle different page layouts.
     """
     global popup_handled
 
@@ -137,13 +137,39 @@ def extract_phone(driver, url, wait_time=15):
             popup_handled = handle_consent_popup(driver, wait_time)
             logger.info("Handled consent popup for the first time")
 
-        # Reveal phone number
-        phone_button = wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "a.phone_show_link"))
-        )
-        phone_button.click()
-        logger.debug("Clicked phone reveal button")
+        # List of possible phone reveal button selectors (CSS selectors)
+        phone_button_selectors = [
+            "a.phone_show_link",
+            'button.size-large.conversion[data-action="showBottomPopUp"]',
+            'button.size-large.conversion[data-action="call"]',
+            "span.conversion_phone_newcars.button.button--green.boxed.mb-16",
+        ]
 
+        phone_button = None
+        for selector in phone_button_selectors:
+            try:
+                phone_button = wait.until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, selector))
+                )
+                logger.info(
+                    f"Found phone reveal button with selector: {selector}"
+                )
+                phone_button.click()
+                logger.info(
+                    f"Clicked phone reveal button with selector: {selector}"
+                )
+                break  # stop trying after successful click
+            except TimeoutException:
+                logger.debug(
+                    f"Phone reveal button not found with selector: {selector}"
+                )
+                continue
+
+        if not phone_button:
+            logger.warning("No phone reveal button found on the page.")
+            return None
+
+        # Wait until the phone number is visible in the popup
         wait.until(
             lambda d: d.find_element(
                 By.CSS_SELECTOR, "div.popup-successful-call-desk"
