@@ -24,14 +24,17 @@ class AutoriaSpider(scrapy.Spider):
 
     def parse(self, response):
         logger.info(f"Parsing listing page: {response.url}")
+
         car_links = response.css("a.address::attr(href)").getall()
         for link in car_links:
             yield response.follow(link, callback=self.parse_car)
 
-        next_page = response.css("a.next::attr(href)").get()
+        next_page = response.css("a.js-next::attr(href)").get()
         if next_page:
             logger.info(f"Following next page: {next_page}")
             yield response.follow(next_page, callback=self.parse)
+        else:
+            logger.info("No next page found")
 
     def parse_car(self, response):
         logger.info(f"[parse_car] Parsing car page: {response.url}")
