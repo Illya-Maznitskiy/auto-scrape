@@ -10,6 +10,7 @@ class Database:
         self.pool = None
 
     async def connect(self):
+        """Establish asynchronous connection pool to the database."""
         logger.info("Connecting to database...")
         try:
             self.pool = await asyncpg.create_pool(
@@ -25,6 +26,7 @@ class Database:
             raise
 
     async def close(self):
+        """Close the asynchronous database connection pool if exists."""
         if self.pool:
             logger.info("Closing database connection pool...")
             await self.pool.close()
