@@ -14,6 +14,7 @@ def get_chrome_driver(headless=True):
     """
     Returns a Chrome WebDriver instance.
     """
+    logger.info(f"Initializing Chrome driver with headless={headless}")
     chrome_options = Options()
     if headless:
         chrome_options.add_argument("--headless")
@@ -58,6 +59,7 @@ def click_element_safe(driver, selector, by=By.CSS_SELECTOR, timeout=10):
 
 
 def handle_consent_popup(driver, wait_time=1):
+    """Detect and dismiss consent popups by clicking or removing them."""
     wait = WebDriverWait(driver, wait_time)
 
     # Quick existence check - avoid waiting for element if not present
