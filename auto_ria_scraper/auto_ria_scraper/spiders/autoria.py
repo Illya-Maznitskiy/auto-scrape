@@ -1,4 +1,7 @@
+import re
+
 import scrapy
+
 from logs.logger import logger
 from auto_ria_scraper.auto_ria_scraper.helpers.selenium_helper import (
     get_chrome_driver,
@@ -37,39 +40,26 @@ class AutoriaSpider(scrapy.Spider):
             'meta[property="og:image"]::attr(content)'
         ).get()
 
-        # Extract images count text from the 'show-all' link
         photos_text = response.css(
             "div.action_disp_all_block a.show-all::text"
         ).get(default="")
 
         # Extract number from the text (e.g. "Смотреть все 62 фотографий")
-        import re
-
         match = re.search(r"\d+", photos_text)
         images_count = int(match.group()) if match else 0
 
         username_raw = (
-            response.css("div.seller_info_name::text").get(default="").strip()
-        )
-
-        logger.debug(f"[parse_car] Found {images_count} image(s)")
-        logger.debug(f"[parse_car] Extracted username: '{username_raw}'")
-
+            response.css("div.seller_info_name a::text").get()
+            or response.css("div.seller_info_name::text").get()
+            or response.css("h4.seller_info_name a::text").get()
+            or ""
+        ).strip()
         car_number = response.xpath(
             "//span[contains(@class,'state-num')]/text()"
         ).get()
         car_vin = response.xpath(
             "//span[contains(@class, 'label-vin')]/text()"
         ).get()
-
-        if not username_raw:
-            logger.warning(
-                f"[parse_car] Username not found on page: {response.url}"
-            )
-        if not car_vin:
-            logger.warning(
-                f"[parse_car] VIN not found on page: {response.url}"
-            )
 
         yield {
             "url": response.url,
