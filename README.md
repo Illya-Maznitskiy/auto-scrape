@@ -94,7 +94,16 @@ python -m main
 ```
 
 
-## Screenshot
+## Run the project with Docker
+
+Make sure Docker is installed and running, then run:
+
+```bash
+docker-compose up --build
+```
+
+
+## Screenshots
 ### Logging
 ![Logging](screenshots/logging.png)
 
