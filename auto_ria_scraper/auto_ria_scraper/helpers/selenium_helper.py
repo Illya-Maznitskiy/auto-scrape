@@ -1,7 +1,10 @@
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException, WebDriverException
+from selenium.common.exceptions import (
+    TimeoutException,
+    NoSuchElementException,
+)
 from selenium.webdriver.chrome.options import Options
 from selenium import webdriver
 from logs.logger import logger
@@ -27,7 +30,7 @@ def wait_for_clickable(driver, selector, by=By.CSS_SELECTOR, timeout=10):
     """
     wait = WebDriverWait(driver, timeout)
     try:
-        element = wait.until(EC.element_to_be_clickable((by, selector)))
+        element = wait.until(ec.element_to_be_clickable((by, selector)))
         logger.info(f"Element is clickable: {selector}")
         return element
     except TimeoutException:
@@ -59,15 +62,13 @@ def handle_consent_popup(driver, wait_time=1):
 
     # Quick existence check - avoid waiting for element if not present
     try:
-        popup_present = driver.find_element(
-            By.CSS_SELECTOR, ".fc-dialog, .fc-dialog-overlay"
-        )
+        driver.find_element(By.CSS_SELECTOR, ".fc-dialog, .fc-dialog-overlay")
     except NoSuchElementException:
         # No popup found, return immediately
         return False
 
     consent_selectors = [
-        "//p[contains(@class, 'fc-button-label') and text()='Consent']",
+        "//p[co ntains(@class, 'fc-button-label') and text()='Consent']",
         "//p[contains(text(), 'Consent')]",
         "//button[contains(text(), 'Accept')]",
         "//button[contains(text(), 'Do not consent')]",
@@ -78,9 +79,9 @@ def handle_consent_popup(driver, wait_time=1):
 
     for xpath in consent_selectors:
         try:
-            btn = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
+            btn = wait.until(ec.element_to_be_clickable((By.XPATH, xpath)))
             btn.click()
-            wait.until(EC.invisibility_of_element(btn))
+            wait.until(ec.invisibility_of_element(btn))
             logger.info(f"Clicked consent popup button with xpath: {xpath}")
             return True
         except TimeoutException:
@@ -88,10 +89,10 @@ def handle_consent_popup(driver, wait_time=1):
 
     try:
         overlay = wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, ".fc-dialog-overlay"))
+            ec.element_to_be_clickable((By.CSS_SELECTOR, ".fc-dialog-overlay"))
         )
         overlay.click()
-        wait.until(EC.invisibility_of_element(overlay))
+        wait.until(ec.invisibility_of_element(overlay))
         logger.info("Clicked consent overlay to close popup")
         return True
     except TimeoutException:
