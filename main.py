@@ -43,4 +43,7 @@ async def main():
 
 
 if __name__ == "__main__":
+    run_spider()  # Run outside the asyncio context
+
+    # Now call your async database saving
     asyncio.run(main())
