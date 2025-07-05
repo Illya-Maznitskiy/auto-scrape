@@ -8,12 +8,14 @@ from logs.logger import logger
 from auto_ria_scraper.auto_ria_scraper.spiders.autoria import AutoriaSpider
 from database.save import save_json_to_db
 
+
 load_dotenv()
 
 JSON_OUTPUT_FILE = "output.json"
 
 
 def run_spider():
+    """Configure and run Scrapy spider, saving results to JSON."""
     logger.info("Starting Scrapy spider...")
 
     settings = get_project_settings()
@@ -30,20 +32,27 @@ def run_spider():
 
     process = CrawlerProcess(settings)
     process.crawl(AutoriaSpider)
-    process.start()  # Blocking call until crawling finishes
+    process.start()
 
     logger.info("Scrapy spider finished.")
 
 
 async def main():
+    """Connect to DB, save JSON data, then close connection."""
+    logger.info("Starting main execution...")
     db = Database()
-    await db.connect()  # <-- make sure this is awaited
+
+    await db.connect()
+    logger.info("Connected to DB.")
+
     await save_json_to_db("output.json", db)
+    logger.info("Data from JSON saved to DB.")
+
     await db.close()
+    logger.info("Database connection closed.")
 
 
 if __name__ == "__main__":
-    run_spider()  # Run outside the asyncio context
+    run_spider()
 
-    # Now call your async database saving
     asyncio.run(main())
