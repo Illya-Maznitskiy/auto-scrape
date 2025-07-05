@@ -95,9 +95,10 @@ python -m main
 
 
 ## Run the project with Docker
-
 Make sure Docker is installed and running, then run:
-
+If you're running the project using Docker Compose, make sure to use:
+DB_HOST=db
+in your .env file
 ```bash
 docker-compose up --build
 ```
