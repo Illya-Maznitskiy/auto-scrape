@@ -17,13 +17,15 @@ def extract_price(response):
 
     span_prices = response.css("span[data-currency='USD']::text").getall()
     logger.debug(
-        f"Found {len(span_prices)} price texts in <span data-currency='USD'>: {span_prices}"
+        f"Found {len(span_prices)} price texts in "
+        f"<span data-currency='USD'>: {span_prices}"
     )
 
     if not span_prices:
         strong_prices = response.css("strong::text").re(r"[\d\s]+[$]")
         logger.debug(
-            f"Found {len(strong_prices)} price texts in <strong>: {strong_prices}"
+            f"Found {len(strong_prices)} price texts in "
+            f"<strong>: {strong_prices}"
         )
     else:
         strong_prices = []
@@ -64,7 +66,8 @@ def extract_odometer(response):
 
 def handle_consent_popup(driver, wait_time=1):
     """
-    Attempts to close or reject cookie/consent popups using multiple strategies.
+    Attempts to close or reject cookie/consent popups
+    using multiple strategies.
     """
     wait = WebDriverWait(driver, wait_time)
 
@@ -118,7 +121,8 @@ def handle_consent_popup(driver, wait_time=1):
 
 def extract_phone(driver, url, wait_time=15):
     """
-    Extract phone number using Selenium, waiting until the phone number is revealed.
+    Extract phone number using Selenium, waiting until
+    the phone number is revealed.
     Takes a screenshot if phone number is missing for debugging.
     """
     global popup_handled
