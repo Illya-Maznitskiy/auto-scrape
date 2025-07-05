@@ -23,6 +23,7 @@ class AutoriaSpider(scrapy.Spider):
         self.driver = get_chrome_driver(headless=False)
 
     def parse(self, response):
+        """Extract car links and follow pagination to next listing pages."""
         logger.info(f"Parsing listing page: {response.url}")
 
         car_links = response.css("a.address::attr(href)").getall()
@@ -37,6 +38,7 @@ class AutoriaSpider(scrapy.Spider):
             logger.info("No next page found")
 
     def parse_car(self, response):
+        """Parse car details and extract data from car page."""
         logger.info(f"[parse_car] Parsing car page: {response.url}")
 
         main_image_url = response.css(
@@ -86,5 +88,10 @@ class AutoriaSpider(scrapy.Spider):
                 else None
             ),
         }
+
+        logger.info(
+            "[parse_car] Parsed car_data: "
+            + ", ".join(f"{k}='{v}'" for k, v in car_data.items())
+        )
 
         yield car_data
