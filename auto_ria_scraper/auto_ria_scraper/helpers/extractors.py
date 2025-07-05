@@ -1,6 +1,6 @@
 import re
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 from logs.logger import logger
@@ -83,21 +83,21 @@ def handle_consent_popup(driver, wait_time=1):
 
     for xpath in consent_selectors:
         try:
-            btn = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
+            btn = wait.until(ec.element_to_be_clickable((By.XPATH, xpath)))
             btn.click()
             logger.info(f"Clicked consent popup button with xpath: {xpath}")
-            wait.until(EC.invisibility_of_element(btn))
+            wait.until(ec.invisibility_of_element(btn))
             return True
         except TimeoutException:
             continue
 
     try:
         overlay = wait.until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, ".fc-dialog-overlay"))
+            ec.element_to_be_clickable((By.CSS_SELECTOR, ".fc-dialog-overlay"))
         )
         overlay.click()
         logger.info("Clicked consent overlay to close popup")
-        wait.until(EC.invisibility_of_element(overlay))
+        wait.until(ec.invisibility_of_element(overlay))
         return True
     except TimeoutException:
         pass
@@ -149,12 +149,12 @@ def extract_phone(driver, url, wait_time=15):
         for selector in phone_button_selectors:
             try:
                 phone_button = wait.until(
-                    EC.element_to_be_clickable((By.CSS_SELECTOR, selector))
+                    ec.element_to_be_clickable((By.CSS_SELECTOR, selector))
                 )
                 logger.info(
                     f"Found phone reveal button with selector: {selector}"
                 )
-                phone_button.click()
+                driver.execute_script("arguments[0].click();", phone_button)
                 logger.info(
                     f"Clicked phone reveal button with selector: {selector}"
                 )
@@ -206,7 +206,10 @@ def extract_phone(driver, url, wait_time=15):
 
 
 def clean_phone(phone_raw):
+    """Normalize phone number digits."""
+    logger.debug(f"Raw phone input: {phone_raw}")
     digits = re.sub(r"\D", "", phone_raw)  # remove non-digits
     if digits.startswith("0"):
         digits = "380" + digits[1:]  # add country code
+    logger.debug(f"Cleaned phone number: {digits}")
     return digits
