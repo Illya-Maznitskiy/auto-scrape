@@ -1,5 +1,8 @@
 import re
+import os
+
 import scrapy
+from dotenv import load_dotenv
 
 from logs.logger import logger
 from auto_ria_scraper.auto_ria_scraper.helpers.selenium_helper import (
@@ -13,6 +16,10 @@ from auto_ria_scraper.auto_ria_scraper.helpers.extractors import (
 )
 
 
+load_dotenv()
+PAGE_TO_SCRAPE = int(os.getenv("PAGE_TO_SCRAPE", 5))
+
+
 class AutoriaSpider(scrapy.Spider):
     name = "autoria"
     allowed_domains = ["auto.ria.com"]
@@ -21,21 +28,28 @@ class AutoriaSpider(scrapy.Spider):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.driver = get_chrome_driver(headless=False)
+        self.page_counter = 1
 
     def parse(self, response):
         """Extract car links and follow pagination to next listing pages."""
-        logger.info(f"Parsing listing page: {response.url}")
+        logger.info(
+            f"Parsing listing page {self.page_counter}/{PAGE_TO_SCRAPE}: {response.url}"
+        )
 
         car_links = response.css("a.address::attr(href)").getall()
         for link in car_links:
             yield response.follow(link, callback=self.parse_car)
 
-        next_page = response.css("a.js-next::attr(href)").get()
-        if next_page:
-            logger.info(f"Following next page: {next_page}")
-            yield response.follow(next_page, callback=self.parse)
+        if self.page_counter < PAGE_TO_SCRAPE:
+            next_page = response.css("a.js-next::attr(href)").get()
+            if next_page:
+                self.page_counter += 1
+                logger.info(
+                    f"Following next page ({self.page_counter}): {next_page}"
+                )
+                yield response.follow(next_page, callback=self.parse)
         else:
-            logger.info("No next page found")
+            logger.info("Reached PAGE_TO_SCRAPE limit")
 
     def parse_car(self, response):
         """Parse car details and extract data from car page."""
