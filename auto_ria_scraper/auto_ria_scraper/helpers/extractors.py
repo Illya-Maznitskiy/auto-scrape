@@ -119,7 +119,7 @@ def handle_consent_popup(driver, wait_time=1):
     return False
 
 
-def extract_phone(driver, url, wait_time=15):
+def extract_phone(driver, url, wait_time=5):
     """
     Extract phone number using Selenium, waiting until
     the phone number is revealed.
@@ -147,8 +147,9 @@ def extract_phone(driver, url, wait_time=15):
 
         phone_button = None
         for selector in phone_button_selectors:
+            short_wait = WebDriverWait(driver, 5)
             try:
-                phone_button = wait.until(
+                phone_button = short_wait.until(
                     ec.element_to_be_clickable((By.CSS_SELECTOR, selector))
                 )
                 logger.info(
@@ -158,11 +159,9 @@ def extract_phone(driver, url, wait_time=15):
                 logger.info(
                     f"Clicked phone reveal button with selector: {selector}"
                 )
-                break  # stop trying after successful click
+                break
             except TimeoutException:
-                logger.debug(
-                    f"Phone reveal button not found with selector: {selector}"
-                )
+                logger.debug(f"Phone reveal button not found (5s): {selector}")
                 continue
 
         if not phone_button:
