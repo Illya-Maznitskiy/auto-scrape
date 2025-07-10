@@ -22,7 +22,7 @@ logger.setLevel(logging.DEBUG)  # set your own logger lev
 popup_handled = False
 
 
-def handle_consent_popup(driver, wait_time=1):
+def handle_consent_popup(driver, wait_time=5):
     """
     Attempts to close or reject cookie/consent popups
     using multiple strategies.
@@ -77,7 +77,7 @@ def handle_consent_popup(driver, wait_time=1):
     return False
 
 
-def find_and_click_reveal_button(driver, wait_time=5):
+def find_and_click_reveal_button(driver, wait_time=10):
     reveal_selectors = [
         "a.phone_show_link",
         'button.size-large.conversion[data-action="showBottomPopUp"]',
@@ -109,7 +109,7 @@ def find_and_click_reveal_button(driver, wait_time=5):
     return False
 
 
-def wait_for_phone_display(driver, wait_time=5):
+def wait_for_phone_display(driver, wait_time=10):
     """
     Waits for a full phone number to be visible on the page.
     """
@@ -136,7 +136,7 @@ def wait_for_phone_display(driver, wait_time=5):
     return None
 
 
-def extract_phone(driver, url, wait_time=5):
+def extract_phone(driver, url, wait_time=10):
     logger.info(f"Extracting phone number from {url}")
     driver.get(url)
 
