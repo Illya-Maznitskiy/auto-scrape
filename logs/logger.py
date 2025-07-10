@@ -34,3 +34,4 @@ file_handler.setFormatter(file_format)
 # Add handlers to logger
 logger.addHandler(console_handler)
 logger.addHandler(file_handler)
+logger.propagate = False
