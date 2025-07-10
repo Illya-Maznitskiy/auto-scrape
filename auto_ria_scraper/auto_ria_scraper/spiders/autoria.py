@@ -3,21 +3,27 @@ import os
 
 import scrapy
 from dotenv import load_dotenv
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 from logs.logger import logger
 from auto_ria_scraper.auto_ria_scraper.helpers.selenium_helper import (
     get_chrome_driver,
 )
-from auto_ria_scraper.auto_ria_scraper.helpers.extractors import (
-    extract_price,
+from auto_ria_scraper.auto_ria_scraper.helpers.odometer_extractor import (
     extract_odometer,
+)
+from auto_ria_scraper.auto_ria_scraper.helpers.phone_extractor import (
     extract_phone,
     clean_phone,
+)
+from auto_ria_scraper.auto_ria_scraper.helpers.price_extractor import (
+    extract_price,
 )
 
 
 load_dotenv()
-PAGE_TO_SCRAPE = int(os.getenv("PAGE_TO_SCRAPE", 5))
+PAGE_TO_SCRAPE = int(os.getenv("PAGE_TO_SCRAPE", 1))
 
 
 class AutoriaSpider(scrapy.Spider):
@@ -25,9 +31,23 @@ class AutoriaSpider(scrapy.Spider):
     allowed_domains = ["auto.ria.com"]
     start_urls = ["https://auto.ria.com/car/used/"]
 
+    def get_chrome_driver(headless=False):
+        chrome_options = Options()
+        # if headless:
+        #     chrome_options.add_argument("--headless")
+        # chrome_options.add_argument("--no-sandbox")
+        # chrome_options.add_argument("--disable-dev-shm-usage")
+        # chrome_options.add_argument("--disable-gpu")
+        # chrome_options.add_argument("--remote-debugging-port=9222")
+        # chrome_options.add_argument("--window-size=1920,1080")
+
+        driver = webdriver.Chrome(options=chrome_options)
+        return driver
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.driver = get_chrome_driver(headless=False)
+
         self.page_counter = 1
 
     def parse(self, response):
@@ -38,6 +58,11 @@ class AutoriaSpider(scrapy.Spider):
 
         car_links = response.css("a.address::attr(href)").getall()
         for link in car_links:
+            # Skip links that contain "/newauto/"
+            if "/newauto/" in link:
+                logger.debug(f"Skipping new car URL: {link}")
+                continue
+
             yield response.follow(link, callback=self.parse_car)
 
         if self.page_counter < PAGE_TO_SCRAPE:
@@ -65,7 +90,7 @@ class AutoriaSpider(scrapy.Spider):
 
         # Extract number from the text (e.g. "Смотреть все 62 фотографий")
         match = re.search(r"\d+", photos_text)
-        images_count = int(match.group()) if match else 0
+        images_count = int(match.group()) - 1 if match else 0
 
         username_raw = (
             response.css("div.seller_info_name a::text").get()
@@ -83,15 +108,33 @@ class AutoriaSpider(scrapy.Spider):
             .get(default="")
             .strip()
         )
+
+        if not car_vin:
+            car_vin = (
+                response.xpath(
+                    "//span[@id='badgesVin']//span[contains(@class, 'common-text')]/text()"
+                )
+                .get(default="")
+                .strip()
+            )
+
+        phone = extract_phone(self.driver, response.url)
+
+        # Check if phone is a dict and contains 'main_phone'
+        if isinstance(phone, dict) and "main_phone" in phone:
+            raw_phone = phone["main_phone"]
+        else:
+            raw_phone = phone  # assume it's a string
+
+        cleaned_phone = clean_phone(raw_phone) if raw_phone else ""
+
         car_data = {
             "url": response.url,
-            "title": response.css("h1.head::text").get(),
+            "title": response.css("h1.head::text").get(default="").strip(),
             "price_usd": extract_price(response),
             "odometer": extract_odometer(response),
             "username": username_raw,
-            "phone_number": clean_phone(
-                extract_phone(self.driver, response.url)
-            ),
+            "phone_number": cleaned_phone,
             "image_url": main_image_url,
             "images_count": images_count,
             "car_number": car_number,
@@ -104,7 +147,7 @@ class AutoriaSpider(scrapy.Spider):
         }
 
         logger.info(
-            "[parse_car] Parsed car_data: "
+            "[parse] Parsed car_data: "
             + ", ".join(f"{k}='{v}'" for k, v in car_data.items())
         )
 
