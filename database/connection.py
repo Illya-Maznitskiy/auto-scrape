@@ -21,16 +21,53 @@ class Database:
                 port=os.getenv("DB_PORT"),
             )
             logger.info("Database connection pool created.")
+            await self.ensure_tables()
         except Exception as e:
             logger.error(f"Failed to connect to database: {e}")
             raise
 
     async def close(self):
-        """Close the asynchronous database connection pool if exists."""
         if self.pool:
             logger.info("Closing database connection pool...")
             await self.pool.close()
             logger.info("Database connection pool closed.")
+
+    async def ensure_tables(self):
+        """Create tables if they don't exist."""
+        create_cars_table = """
+        CREATE TABLE IF NOT EXISTS cars (
+            url TEXT NOT NULL,
+            title TEXT,
+            price_usd INTEGER,
+            odometer INTEGER,
+            username TEXT,
+            phone_number TEXT,
+            image_url TEXT,
+            images_count INTEGER,
+            car_number TEXT,
+            car_vin TEXT PRIMARY KEY,
+            datetime_found TIMESTAMP
+        );
+        """
+        try:
+            async with self.pool.acquire() as conn:
+                logger.info("Checking and creating 'cars' table if needed...")
+                await conn.execute(create_cars_table)
+                logger.info("Table 'cars' created or already exists.")
+        except Exception as e:
+            logger.error(f"Error creating 'cars' table: {e}")
+            raise
+
+    async def truncate_cars_table(self):
+        """Clear all existing data in the cars table."""
+        try:
+            async with self.pool.acquire() as conn:
+                logger.info("Cleaning 'cars' table...")
+                await conn.execute("TRUNCATE TABLE cars;")
+                logger.info("'cars' table cleaned successfully.")
+        except Exception as e:
+            logger.error(f"Error cleaning 'cars' table: {e}")
+            raise
 
 
 db = Database()
