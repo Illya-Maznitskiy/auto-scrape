@@ -23,7 +23,7 @@ from auto_ria_scraper.auto_ria_scraper.helpers.price_extractor import (
 
 
 load_dotenv()
-PAGE_TO_SCRAPE = int(os.getenv("PAGE_TO_SCRAPE", 1))
+PAGE_TO_SCRAPE = int(os.getenv("PAGE_TO_SCRAPE", 3))
 
 
 class AutoriaSpider(scrapy.Spider):
@@ -31,24 +31,20 @@ class AutoriaSpider(scrapy.Spider):
     allowed_domains = ["auto.ria.com"]
     start_urls = ["https://auto.ria.com/car/used/"]
 
-    def get_chrome_driver(headless=False):
-        chrome_options = Options()
-        # if headless:
-        #     chrome_options.add_argument("--headless")
-        # chrome_options.add_argument("--no-sandbox")
-        # chrome_options.add_argument("--disable-dev-shm-usage")
-        # chrome_options.add_argument("--disable-gpu")
-        # chrome_options.add_argument("--remote-debugging-port=9222")
-        # chrome_options.add_argument("--window-size=1920,1080")
-
-        driver = webdriver.Chrome(options=chrome_options)
-        return driver
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, start_page=1, end_page=1, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.driver = get_chrome_driver(headless=False)
+        self.start_page = int(start_page)
+        self.end_page = int(end_page)
+        self.page_counter = self.start_page
+        self.start_urls = [
+            f"https://auto.ria.com/car/used/?page={self.start_page}"
+        ]
 
-        self.page_counter = 1
+    def get_chrome_driver(headless=False):
+        chrome_options = Options()
+        driver = webdriver.Chrome(options=chrome_options)
+        return driver
 
     def parse(self, response):
         """Extract car links and follow pagination to next listing pages."""
@@ -65,7 +61,7 @@ class AutoriaSpider(scrapy.Spider):
 
             yield response.follow(link, callback=self.parse_car)
 
-        if self.page_counter < PAGE_TO_SCRAPE:
+        if self.page_counter < self.end_page:
             next_page = response.css("a.js-next::attr(href)").get()
             if next_page:
                 self.page_counter += 1
@@ -78,6 +74,17 @@ class AutoriaSpider(scrapy.Spider):
 
     def parse_car(self, response):
         """Parse car details and extract data from car page."""
+        logger.info(f"[parse_car] Parsing car page: {response.url}")
+
+        notice_text = (
+            response.css("div.notice_head::text").get(default="").strip()
+        )
+        if "удалено и не принимает участия в поиске" in notice_text:
+            logger.info(
+                f"Skipping deleted listing: {response.url} — notice found: '{notice_text}'"
+            )
+            return  # skip parsing this page immediately
+
         logger.info(f"[parse_car] Parsing car page: {response.url}")
 
         main_image_url = response.css(
