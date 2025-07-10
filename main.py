@@ -38,12 +38,15 @@ def run_spider():
 
 
 async def main():
-    """Connect to DB, save JSON data, then close connection."""
+    """Connect to DB, clean old data, save JSON, close connection."""
     logger.info("Starting main execution...")
     db = Database()
 
     await db.connect()
     logger.info("Connected to DB.")
+
+    await db.truncate_cars_table()
+    logger.info("Old records removed from DB.")
 
     await save_json_to_db("output.json", db)
     logger.info("Data from JSON saved to DB.")
