@@ -77,7 +77,7 @@ def handle_consent_popup(driver, wait_time=1):
     return False
 
 
-def find_and_click_reveal_button(driver, wait_time=4):
+def find_and_click_reveal_button(driver, wait_time=5):
     reveal_selectors = [
         "a.phone_show_link",
         'button.size-large.conversion[data-action="showBottomPopUp"]',
@@ -109,7 +109,7 @@ def find_and_click_reveal_button(driver, wait_time=4):
     return False
 
 
-def wait_for_phone_display(driver, wait_time=4):
+def wait_for_phone_display(driver, wait_time=5):
     """
     Waits for a full phone number to be visible on the page.
     """
@@ -136,7 +136,7 @@ def wait_for_phone_display(driver, wait_time=4):
     return None
 
 
-def extract_phone(driver, url, wait_time=4):
+def extract_phone(driver, url, wait_time=5):
     logger.info(f"Extracting phone number from {url}")
     driver.get(url)
 
@@ -145,7 +145,7 @@ def extract_phone(driver, url, wait_time=4):
         popup_handled = handle_consent_popup(driver, wait_time)
         logger.info("Handled consent popup for the first time")
     else:
-        wait_time = 5
+        wait_time = 8
 
     # Step 1: Click on phone reveal trigger
     clicked = find_and_click_reveal_button(driver, wait_time)
