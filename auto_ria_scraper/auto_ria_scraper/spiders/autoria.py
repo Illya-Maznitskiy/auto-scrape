@@ -76,14 +76,15 @@ class AutoriaSpider(scrapy.Spider):
         """Parse car details and extract data from car page."""
         logger.info(f"[parse_car] Parsing car page: {response.url}")
 
-        notice_text = (
-            response.css("div.notice_head::text").get(default="").strip()
-        )
-        if "удалено и не принимает участия в поиске" in notice_text:
+        notice_text = " ".join(
+            response.css("div.notice_head *::text").getall()
+        ).strip()
+
+        if re.search(r"удалено.*не принимает участия", notice_text.lower()):
             logger.info(
-                f"Skipping deleted listing: {response.url} — notice found: '{notice_text}'"
+                f"Skipping deleted listing: {response.url} — notice: {notice_text}"
             )
-            return  # skip parsing this page immediately
+            return
 
         logger.info(f"[parse_car] Parsing car page: {response.url}")
 
