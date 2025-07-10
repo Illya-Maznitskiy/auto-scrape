@@ -4,7 +4,10 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import (
+    TimeoutException,
+    StaleElementReferenceException,
+)
 
 import logging
 from logs.logger import logger  # your own logger instance
@@ -74,19 +77,66 @@ def handle_consent_popup(driver, wait_time=1):
     return False
 
 
-def find_clickable_element(driver, selectors, wait_time=5):
-    for selector in selectors:
+def find_and_click_reveal_button(driver, wait_time=4):
+    reveal_selectors = [
+        "a.phone_show_link",
+        'button.size-large.conversion[data-action="showBottomPopUp"]',
+    ]
+    for selector in reveal_selectors:
         try:
+            logger.info(f"Waiting for element: {selector}")
             element = WebDriverWait(driver, wait_time).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, selector))
             )
-            return element, selector
+            logger.info(f"Found reveal button: {selector}")
+            try:
+                driver.execute_script("arguments[0].click();", element)
+            except StaleElementReferenceException:
+                logger.warning(
+                    "StaleElementReferenceException caught. Retrying click..."
+                )
+                element = WebDriverWait(driver, wait_time).until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, selector))
+                )
+                driver.execute_script("arguments[0].click();", element)
+            logger.info(f"Clicked reveal button: {selector}")
+            return True
         except TimeoutException:
-            continue
-    return None, None
+            logger.debug(f"Element not found: {selector}")
+        except Exception as e:
+            logger.error(f"Error clicking reveal button: {e}")
+    logger.warning("No phone reveal button was found.")
+    return False
 
 
-def extract_phone(driver, url, wait_time=2):
+def wait_for_phone_display(driver, wait_time=4):
+    """
+    Waits for a full phone number to be visible on the page.
+    """
+    phone_number_selectors = [
+        "div.popup-successful-call-desk",
+        'button.size-large.conversion[data-action="call"] span.common-text.ws-pre-wrap.action',
+    ]
+    for selector in phone_number_selectors:
+        try:
+            logger.info(f"Waiting for phone number element: {selector}")
+            element = WebDriverWait(driver, wait_time).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, selector))
+            )
+            logger.info(f"Phone number element appeared: {selector}")
+            # Log element's outerHTML for debugging
+            outer_html = driver.execute_script(
+                "return arguments[0].outerHTML;", element
+            )
+            logger.debug(f"Phone element HTML: {outer_html}")
+            return element
+        except TimeoutException:
+            logger.debug(f"Phone number not found in: {selector}")
+    logger.warning("Failed to find phone number after clicking.")
+    return None
+
+
+def extract_phone(driver, url, wait_time=4):
     logger.info(f"Extracting phone number from {url}")
     driver.get(url)
 
@@ -94,56 +144,44 @@ def extract_phone(driver, url, wait_time=2):
     if not popup_handled:
         popup_handled = handle_consent_popup(driver, wait_time)
         logger.info("Handled consent popup for the first time")
+    else:
+        wait_time = 5
 
-    phone_button_selectors = [
-        'button.size-large.conversion[data-action="showBottomPopUp"]',
-        "a.phone_show_link",
-        'button.size-large.conversion[data-action="call"]',
-        "span.conversion_phone_newcars.button.button--green.boxed.mb-16",
-    ]
+    # Step 1: Click on phone reveal trigger
+    clicked = find_and_click_reveal_button(driver, wait_time)
+    if not clicked:
+        logger.error("Failed to click reveal button.")
+        return None
+    else:
+        logger.info("Reveal button clicked successfully.")
 
-    phone_button, selector = find_clickable_element(
-        driver, phone_button_selectors
-    )
-    if not phone_button:
-        logger.warning("No phone reveal button found on page.")
+    # Step 2: Wait for full phone number to appear
+    phone_element = wait_for_phone_display(driver, wait_time)
+    if not phone_element:
+        logger.error(
+            "Phone element did not appear after clicking reveal button."
+        )
         return None
 
-    logger.info(f"Found and clicking phone button: {selector}")
-    driver.execute_script("arguments[0].click();", phone_button)
-
-    # Wait a bit for the full phone number to show up either in a popup or inside the button span
+    # Try to extract from div (popup) or span (button)
     try:
-        # Option 1: Check for popup with full number
-        phone_div = WebDriverWait(driver, wait_time).until(
-            EC.presence_of_element_located(
-                (By.CSS_SELECTOR, "div.popup-successful-call-desk")
+        if phone_element.tag_name == "div":
+            phone_number = (
+                phone_element.get_attribute("data-value")
+                or phone_element.text.strip()
             )
-        )
-        phone_number = (
-            phone_div.get_attribute("data-value") or phone_div.text.strip()
-        )
-        if phone_number:
-            logger.info(f"Extracted phone number from popup: {phone_number}")
-            return phone_number
-    except TimeoutException:
-        logger.debug("Popup with phone number did not appear.")
+        else:
+            phone_number = phone_element.text.strip()
 
-    # Option 2: If no popup, try to get phone number from the button's span text (full number after clicking)
-    try:
-        span = phone_button.find_element(
-            By.CSS_SELECTOR, "span.common-text.ws-pre-wrap.action"
-        )
-        phone_number = span.text.strip()
         if phone_number:
-            logger.info(
-                f"Extracted phone number from button span: {phone_number}"
-            )
+            logger.info(f"Extracted phone number: {phone_number}")
             return phone_number
-    except Exception:
-        logger.debug("Could not get phone number from button span.")
+        else:
+            logger.warning("Phone number text was empty after extraction.")
+    except Exception as e:
+        logger.error(f"Error extracting phone number text: {e}")
 
-    logger.warning("Failed to extract phone number.")
+    logger.warning("Failed to extract phone number text.")
     return None
 
 
