@@ -89,6 +89,11 @@ flake8
 
 
 ## Run the project
+if you want to use scheduler run:
+```bash
+python -m utils.scheduler
+```
+or if you want to run it directly use:
 ```bash
 python -m main
 ```
