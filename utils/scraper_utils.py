@@ -33,33 +33,56 @@ def run_parallel_spiders(total_pages=3, chunks=3):
         f"total_pages={total_pages}, chunks={chunks}"
     )
 
-    pages_per_chunk = total_pages // chunks
-    remainder = total_pages % chunks
-    logger.debug(
-        f"Pages per chunk: {pages_per_chunk}, Remainder pages: {remainder}"
-    )
+    if total_pages == 0:
+        raise ValueError("No pages to scrape.")
 
     processes = []
 
-    for i in range(chunks):
-        start = i * pages_per_chunk + 1
-        # Add remainder pages to the last chunk
-        end = (i + 1) * pages_per_chunk
-        if i == chunks - 1:
-            end += remainder
-
-        output_file = f"output_chunk_{i + 1}.json"
+    if total_pages == 1 or total_pages < chunks:
+        # Run a single chunk
+        start, end = 1, total_pages
+        output_file = "output_chunk_1.json"
 
         logger.info(
-            f"Launching process {i + 1}/{chunks} "
-            f"to scrape pages {start} to {end}, saving to '{output_file}'"
+            f"Launching single process to scrape pages "
+            f"{start} to {end}, saving to '{output_file}'"
         )
 
         p = Process(target=run_spider, args=(start, end, output_file))
         p.start()
         processes.append(p)
 
-    logger.info(f"All {chunks} processes started, waiting for completion...")
+    else:
+        pages_per_chunk = total_pages // chunks
+        remainder = total_pages % chunks
+        logger.debug(
+            f"Pages per chunk: {pages_per_chunk}, Remainder pages: {remainder}"
+        )
+
+        current_page = 1
+
+        for i in range(chunks):
+            start = current_page
+            end = start + pages_per_chunk - 1
+            if i < remainder:
+                end += 1
+
+            output_file = f"output_chunk_{i + 1}.json"
+
+            logger.info(
+                f"Launching process {i + 1}/{chunks} "
+                f"to scrape pages {start} to {end}, saving to '{output_file}'"
+            )
+
+            p = Process(target=run_spider, args=(start, end, output_file))
+            p.start()
+            processes.append(p)
+
+            current_page = end + 1
+
+    logger.info(
+        f"All {len(processes)} process(es) started, waiting for completion..."
+    )
 
     for i, p in enumerate(processes, start=1):
         p.join()
