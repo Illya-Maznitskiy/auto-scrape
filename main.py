@@ -2,6 +2,7 @@ import asyncio
 import glob
 import json
 import os
+from multiprocessing import Process
 
 from dotenv import load_dotenv
 from scrapy.crawler import CrawlerProcess
@@ -41,12 +42,10 @@ def run_spider(start_page, end_page, output_file):
     process.start()
 
 
-from multiprocessing import Process
-
-
 def run_parallel_spiders(total_pages=3, chunks=3):
     logger.info(
-        f"Starting parallel scraping: total_pages={total_pages}, chunks={chunks}"
+        f"Starting parallel scraping: "
+        f"total_pages={total_pages}, chunks={chunks}"
     )
 
     pages_per_chunk = total_pages // chunks
