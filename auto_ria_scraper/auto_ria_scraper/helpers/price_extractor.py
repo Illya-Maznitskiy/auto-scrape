@@ -26,10 +26,12 @@ def extract_price(response):
 
     all_prices = span_prices if span_prices else strong_prices
 
-    # Clean prices: remove spaces, non-breaking spaces, $ sign, and any other non-digit chars
+    # Clean prices: remove spaces, non-breaking spaces,
+    # $ sign, and any other non-digit chars
     cleaned_prices = []
     for price in all_prices:
-        # Remove spaces (normal and non-breaking), $ sign, and anything except digits
+        # Remove spaces (normal and non-breaking), $ sign,
+        # and anything except digits
         cleaned = re.sub(r"\D", "", price)
         cleaned_prices.append(cleaned)
 
