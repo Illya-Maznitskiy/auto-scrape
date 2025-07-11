@@ -7,9 +7,6 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 from logs.logger import logger
-from auto_ria_scraper.auto_ria_scraper.helpers.selenium_helper import (
-    get_chrome_driver,
-)
 from auto_ria_scraper.auto_ria_scraper.helpers.odometer_extractor import (
     extract_odometer,
 )
@@ -33,7 +30,7 @@ class AutoriaSpider(scrapy.Spider):
 
     def __init__(self, start_page=1, end_page=1, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.driver = get_chrome_driver(headless=False)
+        self.driver = self.get_chrome_driver(headless=False)
         self.start_page = int(start_page)
         self.end_page = int(end_page)
         self.page_counter = self.start_page
@@ -41,8 +38,35 @@ class AutoriaSpider(scrapy.Spider):
             f"https://auto.ria.com/car/used/?page={self.start_page}"
         ]
 
-    def get_chrome_driver(headless=False):
+    def get_chrome_driver(self, headless=False):
         chrome_options = Options()
+
+        if headless:
+            chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--disable-extensions")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--window-size=1920,1080")
+
+        # ✅ Keep only essential settings for performance
+        prefs = {
+            "profile.managed_default_content_settings.images": 2,
+            "profile.managed_default_content_settings.stylesheets": 2,
+            "profile.managed_default_content_settings.fonts": 2,
+            "profile.managed_default_content_settings.cookies": 1,
+            "profile.managed_default_content_settings.javascript": 1,
+        }
+        chrome_options.add_experimental_option("prefs", prefs)
+
+        chrome_options.add_argument(
+            "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/115.0.0.0 Safari/537.36"
+        )
+
+        chrome_options.page_load_strategy = "normal"
+
         driver = webdriver.Chrome(options=chrome_options)
         return driver
 
