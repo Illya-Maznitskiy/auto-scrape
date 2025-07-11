@@ -49,7 +49,8 @@ class AutoriaSpider(scrapy.Spider):
     def parse(self, response):
         """Extract car links and follow pagination to next listing pages."""
         logger.info(
-            f"Parsing listing page {self.page_counter}/{PAGE_TO_SCRAPE}: {response.url}"
+            f"Parsing listing page {self.page_counter}/{PAGE_TO_SCRAPE}: "
+            f"{response.url}"
         )
 
         car_links = response.css("a.address::attr(href)").getall()
@@ -82,7 +83,8 @@ class AutoriaSpider(scrapy.Spider):
 
         if re.search(r"удалено.*не принимает участия", notice_text.lower()):
             logger.info(
-                f"Skipping deleted listing: {response.url} — notice: {notice_text}"
+                f"Skipping deleted listing: {response.url} "
+                f"— notice: {notice_text}"
             )
             return
 
@@ -120,7 +122,8 @@ class AutoriaSpider(scrapy.Spider):
         if not car_vin:
             car_vin = (
                 response.xpath(
-                    "//span[@id='badgesVin']//span[contains(@class, 'common-text')]/text()"
+                    "//span[@id='badgesVin']//span[contains(@class, "
+                    "'common-text')]/text()"
                 )
                 .get(default="")
                 .strip()
