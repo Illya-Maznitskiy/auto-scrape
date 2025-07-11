@@ -57,7 +57,8 @@ async def save_json_to_db(json_file, db: Database):
                 record.get("car_vin") or record.get("phone_number") or {i}
             )
             logger.info(
-                f"Saved record {i}/{len(records)}: VIN/Phone/index={vin_or_phone}"
+                f"Saved record {i}/{len(records)}: "
+                f"VIN/Phone/index={vin_or_phone}"
             )
 
     logger.info("All records saved to database.")
