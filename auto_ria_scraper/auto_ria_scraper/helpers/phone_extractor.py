@@ -115,7 +115,8 @@ def wait_for_phone_display(driver, wait_time=10):
     """
     phone_number_selectors = [
         "div.popup-successful-call-desk",
-        'button.size-large.conversion[data-action="call"] span.common-text.ws-pre-wrap.action',
+        'button.size-large.conversion[data-action="call"] '
+        "span.common-text.ws-pre-wrap.action",
     ]
     for selector in phone_number_selectors:
         try:
