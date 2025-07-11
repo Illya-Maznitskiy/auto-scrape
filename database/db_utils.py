@@ -1,7 +1,6 @@
 from database.connection import Database
 from database.save import save_json_to_db
 from logs.logger import logger
-from database.backup_db import create_backup
 
 
 async def connect_db():
@@ -33,4 +32,3 @@ async def run_db_tasks(json_file="output.json"):
         await save_data(db, json_file)
     finally:
         await close_db(db)
-    create_backup()
