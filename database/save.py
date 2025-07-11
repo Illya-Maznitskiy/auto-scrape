@@ -16,10 +16,7 @@ async def save_json_to_db(json_file, db: Database):
             records = json.load(f)
         logger.info(f"Loaded {len(records)} records from JSON.")
 
-        seen_urls = set()
-        unique_records = []
-
-        for idx, record in enumerate(records):
+        for i, record in enumerate(records, 1):
             # Normalize and prepare fields
             record["price_usd"] = (
                 int(record["price_usd"]) if record.get("price_usd") else None
@@ -36,22 +33,6 @@ async def save_json_to_db(json_file, db: Database):
             else:
                 record["datetime_found"] = None
 
-            url = record.get("url", "").strip()
-
-            if url and url not in seen_urls:
-                seen_urls.add(url)
-                unique_records.append(record)
-            else:
-                logger.warning(
-                    f"Skipped duplicate record at index {idx} "
-                    f"with URL={url or 'N/A'}"
-                )
-
-        logger.info(
-            f"{len(unique_records)} unique records will be saved to DB."
-        )
-
-        for i, record in enumerate(unique_records, 1):
             try:
                 await conn.execute(
                     """
@@ -77,14 +58,12 @@ async def save_json_to_db(json_file, db: Database):
                     record["datetime_found"],
                 )
                 logger.info(
-                    f"Saved record {i}/{len(unique_records)}: "
-                    f"URL={record['url']}"
+                    f"Saved record {i}/{len(records)}: URL={record['url']}"
                 )
 
             except asyncpg.exceptions.UniqueViolationError:
                 logger.warning(
-                    f"Skipped DB duplicate at insert time: "
-                    f"index={i}, URL={record['url']}"
+                    f"Skipped DB duplicate at insert time: index={i}, URL={record['url']}"
                 )
 
-    logger.info("All unique records saved to database.")
+    logger.info("All records processed.")
