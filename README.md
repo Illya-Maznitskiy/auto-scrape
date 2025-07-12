@@ -31,6 +31,32 @@ pip install -r requirements.txt
 ```
 
 
+# .env file
+Create .env file in root by the .env.example
+with this data:
+```
+# Database settings
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=auto_scrape
+DB_USER=postgres
+DB_PASSWORD=your_db_password
+
+# Scraper settings
+# one page ~ 1 minute
+PAGE_TO_SCRAPE=3
+# use 2-3 chunks to not overload your system
+CHUNKS=2
+
+# Schedule in UTC tz
+# Scheduler settings (24h format)
+SCRAPER_RUN_TIME=12:00
+
+# Dump settings
+DUMP_RUN_TIME=12:00
+```
+
+
 ## Create Your Database
 Make sure PostgreSQL is installed on your system.
 
